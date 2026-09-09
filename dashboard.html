@@ -1,0 +1,530 @@
+<title>Hadar's Job Radar</title>
+<style>
+  :root {
+    --bg: #f6f4ee;
+    --surface: #ffffff;
+    --surface-2: #efece3;
+    --border: #e0dbcd;
+    --text: #201f1c;
+    --muted: #6f6b60;
+    --accent: #2f5f8a;
+    --accent-soft: #e7eef4;
+    --accent-text: #1d4265;
+
+    --status-new-bg: #eceae3;
+    --status-new-fg: #55524a;
+    --status-reviewing-bg: #faedd0;
+    --status-reviewing-fg: #8a5a0a;
+    --status-referral-bg: #ece3f7;
+    --status-referral-fg: #5e3d99;
+    --status-applied-bg: #dff0e6;
+    --status-applied-fg: #1f7a4d;
+    --status-skip-bg: #f2e4e2;
+    --status-skip-fg: #96453f;
+
+    --font-display: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Consolas, monospace;
+    --font-body: -apple-system, "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151a;
+      --surface: #1a1e24;
+      --surface-2: #20252c;
+      --border: #2b3038;
+      --text: #e9e7e0;
+      --muted: #9b988e;
+      --accent: #6fa8d8;
+      --accent-soft: #1f2c38;
+      --accent-text: #a9cdec;
+
+      --status-new-bg: #262a30;
+      --status-new-fg: #b7b4aa;
+      --status-reviewing-bg: #3a2f14;
+      --status-reviewing-fg: #e0b559;
+      --status-referral-bg: #2c2438;
+      --status-referral-fg: #c6aeed;
+      --status-applied-bg: #16302292;
+      --status-applied-fg: #6fd6a3;
+      --status-skip-bg: #35201e;
+      --status-skip-fg: #e29a94;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151a; --surface: #1a1e24; --surface-2: #20252c; --border: #2b3038;
+    --text: #e9e7e0; --muted: #9b988e; --accent: #6fa8d8; --accent-soft: #1f2c38; --accent-text: #a9cdec;
+    --status-new-bg: #262a30; --status-new-fg: #b7b4aa;
+    --status-reviewing-bg: #3a2f14; --status-reviewing-fg: #e0b559;
+    --status-referral-bg: #2c2438; --status-referral-fg: #c6aeed;
+    --status-applied-bg: #16302292; --status-applied-fg: #6fd6a3;
+    --status-skip-bg: #35201e; --status-skip-fg: #e29a94;
+  }
+  :root[data-theme="light"] {
+    --bg: #f6f4ee; --surface: #ffffff; --surface-2: #efece3; --border: #e0dbcd;
+    --text: #201f1c; --muted: #6f6b60; --accent: #2f5f8a; --accent-soft: #e7eef4; --accent-text: #1d4265;
+    --status-new-bg: #eceae3; --status-new-fg: #55524a;
+    --status-reviewing-bg: #faedd0; --status-reviewing-fg: #8a5a0a;
+    --status-referral-bg: #ece3f7; --status-referral-fg: #5e3d99;
+    --status-applied-bg: #dff0e6; --status-applied-fg: #1f7a4d;
+    --status-skip-bg: #f2e4e2; --status-skip-fg: #96453f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.45;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header.top { display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px; }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h1 .dim { color: var(--muted); font-weight: 400; }
+  .updated {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .stat-chip {
+    font-family: var(--font-display);
+    font-size: 0.76rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+  }
+  .stat-chip .n { font-weight: 600; color: var(--text); }
+  .stat-chip[data-active="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); }
+  .stat-chip[data-active="true"] .n { color: var(--accent-text); }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  #search {
+    flex: 1 1 220px;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  #search:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  select {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    border-radius: 10px 0 0 10px;
+    background: var(--stripe, var(--border));
+  }
+  .card[data-status="new"] { --stripe: var(--status-new-fg); }
+  .card[data-status="reviewing"] { --stripe: var(--status-reviewing-fg); }
+  .card[data-status="referral"] { --stripe: var(--status-referral-fg); }
+  .card[data-status="applied"] { --stripe: var(--status-applied-fg); }
+  .card[data-status="skip"] { --stripe: var(--status-skip-fg); opacity: 0.6; }
+
+  .card-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+  .role { font-size: 1.02rem; font-weight: 650; margin: 0; text-wrap: balance; }
+  .company { color: var(--muted); font-size: 0.88rem; }
+  .meta-line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.78rem; color: var(--muted); font-family: var(--font-display); }
+  .tag {
+    background: var(--surface-2);
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+  .tag.field-software { color: #2f5f8a; }
+  .tag.field-hardware { color: #8a5a0a; }
+  .tag.field-ai { color: #5e3d99; }
+  .tag.level-unclear { background: var(--status-reviewing-bg); color: var(--status-reviewing-fg); }
+
+  .match { font-size: 0.88rem; color: var(--text); }
+  .match .label { color: var(--muted); font-family: var(--font-display); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 6px; }
+
+  details.pitch { font-size: 0.85rem; }
+  details.pitch summary { cursor: pointer; color: var(--accent-text); font-family: var(--font-display); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  details.pitch p { color: var(--text); margin: 8px 0 0; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 4px; }
+  .btn {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 7px 12px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn.referral { background: var(--status-referral-bg); color: var(--status-referral-fg); border-color: transparent; }
+
+  .status-select {
+    margin-left: auto;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+  }
+  .status-select[data-status="new"] { background: var(--status-new-bg); color: var(--status-new-fg); }
+  .status-select[data-status="reviewing"] { background: var(--status-reviewing-bg); color: var(--status-reviewing-fg); }
+  .status-select[data-status="referral"] { background: var(--status-referral-bg); color: var(--status-referral-fg); }
+  .status-select[data-status="applied"] { background: var(--status-applied-bg); color: var(--status-applied-fg); }
+  .status-select[data-status="skip"] { background: var(--status-skip-bg); color: var(--status-skip-fg); }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 20px; font-family: var(--font-display); font-size: 0.85rem; }
+
+  footer.note { margin-top: 34px; font-size: 0.76rem; color: var(--muted); font-family: var(--font-display); line-height: 1.6; }
+  footer.note a { color: var(--accent-text); }
+
+  @media (max-width: 480px) {
+    .status-select { margin-left: 0; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="title-row">
+      <h1>Job Radar <span class="dim">/ Hadar Wolf</span></h1>
+      <span class="updated" id="updated-at"></span>
+    </div>
+    <div class="stat-row" id="stat-row"></div>
+    <div class="controls">
+      <input id="search" type="text" placeholder="Search role, company, location…" />
+      <select id="field-filter">
+        <option value="">All fields</option>
+        <option value="software">Software</option>
+        <option value="hardware">Hardware</option>
+        <option value="ai">AI / ML</option>
+      </select>
+    </div>
+  </header>
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty" hidden>No postings match this filter.</div>
+
+  <footer class="note">
+    Sourced from LinkedIn saved-search alerts (read-only, via email) + public web search. Never auto-applies —
+    review each lead, then use "Find connections" to look for a warm referral before applying.
+    Regenerated automatically; your status marks are saved in this browser only.
+  </footer>
+</div>
+
+<script>
+/* JOBS_START — the scheduled task replaces exactly the array between these two markers on each run, nothing else */
+const JOBS = [
+  {
+    "id": "https://www.linkedin.com/jobs/view/4420487107/",
+    "role": "Software Development Student",
+    "company": "Amazon Web Services (AWS) – Annapurna Labs",
+    "location": "Tel Aviv-Yafo, Israel",
+    "field": "hardware",
+    "level": "Bachelor's (B.Sc., in-progress)",
+    "levelConfidence": "high",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-14",
+    "matchReason": "Embedded/silicon software team at AWS's chip division — direct fit for your Verilog/RTL/computer-architecture coursework and C/C++ project work.",
+    "pitch": "I'm a 4th-year Electrical Engineering & Computer Science student at the Hebrew University of Jerusalem with coursework spanning computer architecture, RTL/SystemVerilog, and operating systems, alongside hands-on C/C++ project work. My capstone project paired embedded sensors (gyroscopes) with real-time signal processing (Kalman filters) and machine learning for a low-cost medical monitoring device, so I'm comfortable working close to hardware while writing production-quality software. I'd welcome the chance to bring that combination to the Annapurna Labs software team.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4420487107/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4438913892/",
+    "role": "Full Stack Developer (Student Position)",
+    "company": "Waterfall Security Solutions",
+    "location": "Israel",
+    "field": "software",
+    "level": "Student position (undergrad-typical)",
+    "levelConfidence": "medium",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-14",
+    "matchReason": "General full-stack student role — fits your Python/TypeScript/SQL/Git skill set and GUI project experience (Boggle, Bricker).",
+    "pitch": "I'm a 4th-year EE & Computer Science student at the Hebrew University of Jerusalem with hands-on full-stack experience — Python, TypeScript/HTML/JS, and SQL — from academic projects like a GUI-based word-solver and an OOP game engine, plus real production experience building data pipelines as an AI Engineer at Hadassah Medical Center. I'd bring both solid fundamentals and applied delivery experience to a full-stack student role at Waterfall.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4438913892/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4438980685/",
+    "role": "Research Intern — Human Pose Understanding & Vision-Language Models",
+    "company": "Apple",
+    "location": "Israel",
+    "field": "ai",
+    "level": "unclear — verify",
+    "levelConfidence": "low",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-14",
+    "matchReason": "Strong thematic fit (sensor-based motion/pose analysis is exactly your capstone's domain) but Apple research-intern roles often require Master's/PhD enrollment — degree requirement wasn't confirmed from the alert text. Check the full posting before investing time.",
+    "pitch": "My capstone project at Hebrew University built a low-cost sensor system (gyroscopes + ML) to detect clubfoot recurrence via gait/motion analysis, using Kalman filters for signal processing and GMM/HMM for motion classification — directly adjacent to human pose understanding. Worth confirming eligibility first given the degree-level uncertainty above.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4438980685/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4442537909/",
+    "role": "Technical Support Engineer – Student Position",
+    "company": "Upwind Security",
+    "location": "Israel",
+    "field": "software",
+    "level": "Student position (undergrad-typical)",
+    "levelConfidence": "medium",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-20",
+    "matchReason": "Explicit student position at a cloud security startup — more support-leaning than pure development, but matches your Linux/SQL/Python fundamentals and would give real production/cloud exposure.",
+    "pitch": "I'm a 4th-year EE & Computer Science student with hands-on Linux, SQL, and Python experience, plus real production experience at Hadassah Medical Center building and debugging data pipelines end-to-end. I like the technical-support angle at a cloud-native security company because it combines deep systems troubleshooting with customer-facing problem solving — both things I've done in student-instructor and clinical-engineering contexts.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4442537909/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4363739284/",
+    "role": "V&V Student",
+    "company": "Kornit Digital",
+    "location": "Israel",
+    "field": "hardware",
+    "level": "Student position (undergrad-typical)",
+    "levelConfidence": "medium-high",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-19",
+    "matchReason": "Verification & validation student role — close match to your capstone work validating a hardware sensor system end-to-end and your signal-processing coursework.",
+    "pitch": "My capstone project involved building and validating a low-cost embedded sensor system (gyroscopes) for clubfoot recurrence detection, including signal processing with Kalman filters and classification with GMM/HMM — so I've done hands-on verification of a real hardware+software system against clinical ground truth. I'd bring that same rigor to a V&V role at Kornit.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4363739284/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4440759731/",
+    "role": "Robotics Software Developer Student",
+    "company": "Siemens Digital Industries Software",
+    "location": "Airport City, Israel (Part-Time)",
+    "field": "software",
+    "level": "Student position (undergrad-typical)",
+    "levelConfidence": "high",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-18",
+    "matchReason": "Explicit student position blending robotics and software — strong fit given your EE+CS background, Arduino/embedded project work, and C/C++ skills.",
+    "pitch": "I'm a 4th-year Electrical Engineering & Computer Science student with direct embedded/robotics experience — Arduino-based sensor systems, C/C++, and GUI development — plus a capstone project combining real-time sensor data with software-side signal processing and ML. Robotics software sits exactly at the intersection of my EE and CS training.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4440759731/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4413461829/",
+    "role": "Junior AI SRE Developer",
+    "company": "Helfy",
+    "location": "Israel",
+    "field": "ai",
+    "level": "Junior (Bachelor's-typical)",
+    "levelConfidence": "medium",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-20",
+    "matchReason": "Junior-level AI/SRE role — fits your Python/Linux/operating-systems background and your Hadassah experience building and operating ML data pipelines.",
+    "pitch": "As an AI Engineer (student position) at Hadassah Medical Center, I build and operate ML data pipelines end-to-end — from ingesting large-scale clinical data to running classification models in production — which gives me real exposure to the reliability and operational side of AI systems, not just modeling. Combined with my OS/Linux coursework, I think that's a strong base for a Junior AI SRE role.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4413461829/"
+  },
+  {
+    "id": "https://www.linkedin.com/jobs/view/4327771116/",
+    "role": "Outstanding Graduate Algorithm Developer",
+    "company": "Mobileye",
+    "location": "Jerusalem District, Israel (Hybrid)",
+    "field": "ai",
+    "level": "unclear — verify",
+    "levelConfidence": "low",
+    "source": "LinkedIn alert",
+    "foundDate": "2026-07-19",
+    "matchReason": "Strong technical fit (algorithm development for autonomous vehicles, ML/classification) but the title's \"Graduate\" framing suggests it may target people who've already completed their degree rather than a current B.Sc. student — confirm eligibility before investing time.",
+    "pitch": "My capstone project applied Kalman filtering and GMM/HMM-based classification to real sensor data for a medical motion-detection system, which is directly relevant to algorithm development for autonomous systems. Worth a quick check on the degree-stage requirement before applying, given the posting's phrasing.",
+    "applyUrl": "https://www.linkedin.com/jobs/view/4327771116/"
+  },
+  {
+    "id": "https://careers.salesforce.com/en/jobs/jr338624/student-worker-software-engineering/",
+    "role": "Student Worker – Software Engineering",
+    "company": "Salesforce",
+    "location": "Tel Aviv, Israel (also hiring in Nazareth)",
+    "field": "software",
+    "level": "Student position (undergrad-typical)",
+    "levelConfidence": "medium",
+    "source": "Web search (Salesforce careers)",
+    "foundDate": "2026-07-27",
+    "matchReason": "Part-time student software engineering role (3-4 days/week, 12-month program starting Sept) open to students in CS/software/electrical/industrial engineering with at least 2 semesters left — fits your Python/TypeScript/Java background and production pipeline experience at Hadassah.",
+    "pitch": "I'm a 4th-year Electrical Engineering & Computer Science student at the Hebrew University of Jerusalem with hands-on software experience across Python, Java, TypeScript, and SQL, plus real production experience building ML data pipelines as an AI Engineer at Hadassah Medical Center. I'm drawn to Salesforce's student program because it offers sustained, real-project involvement rather than a short internship, and I'd bring both solid CS fundamentals and delivery experience from clinical and academic software projects.",
+    "applyUrl": "https://careers.salesforce.com/en/jobs/jr338624/student-worker-software-engineering/"
+  },
+  {
+    "id": "https://jobs.intel.com/en/job/jerusalem/hw-verification-student-for-jerusalem/41147/40582759200",
+    "role": "HW Verification Student",
+    "company": "Intel (Client Design Group)",
+    "location": "Jerusalem, Israel (hybrid, min. 20 hrs/week)",
+    "field": "hardware",
+    "level": "Bachelor's (B.Sc., in-progress)",
+    "levelConfidence": "high",
+    "source": "Web search (Intel careers)",
+    "foundDate": "2026-07-27",
+    "matchReason": "Explicit B.Sc. Electrical/Computer Engineering student role (min. 3 semesters till graduation) doing RTL test-plan creation and system simulation for processor verification — strong match for your computer architecture, RTL/SystemVerilog coursework, and Jerusalem location.",
+    "pitch": "I'm a 4th-year Electrical Engineering & Computer Science student at the Hebrew University of Jerusalem with coursework in computer architecture, RTL/SystemVerilog, and operating systems. My capstone project involved building and validating a real-time embedded sensor system with signal processing (Kalman filters) and classification (GMM/HMM), giving me hands-on experience taking a hardware+software system from design through verification against real-world data — directly relevant to Intel's pre-silicon RTL verification work.",
+    "applyUrl": "https://jobs.intel.com/en/job/jerusalem/hw-verification-student-for-jerusalem/41147/40582759200"
+  },
+  {
+    "id": "https://intel.wd1.myworkdayjobs.com/en-US/External/job/Intel-Wi-Fi-Driver-Software-Developer-Student_JR0284349",
+    "role": "Wi-Fi Driver Software Developer Student",
+    "company": "Intel",
+    "location": "Petah Tikva, Israel (part-time, min. 3 semesters remaining)",
+    "field": "software",
+    "level": "Bachelor's or Master's (B.Sc. eligible)",
+    "levelConfidence": "high",
+    "source": "Web search (Intel careers)",
+    "foundDate": "2026-07-27",
+    "matchReason": "Explicitly open to Bachelor's or Master's students (CS/CE/EE, 3+ semesters remaining) — low-level driver work at the hardware/firmware/OS boundary, matching your C/C++, OS, and embedded coursework. Petah Tikva is a short commute from central Tel Aviv.",
+    "pitch": "I'm a 4th-year EE & Computer Science student with coursework in operating systems and embedded systems, plus hands-on C/C++ project experience and a capstone project that combined embedded sensors with real-time signal processing. I'm interested in Wi-Fi driver development at Intel because it sits exactly at the hardware/firmware/software boundary I enjoy working in, and I'd bring both systems-level rigor and practical debugging experience to the team.",
+    "applyUrl": "https://intel.wd1.myworkdayjobs.com/en-US/External/job/Intel-Wi-Fi-Driver-Software-Developer-Student_JR0284349"
+  }
+];
+/* JOBS_END */
+
+const STATUS_LABELS = {
+  new: "New",
+  reviewing: "Reviewing",
+  referral: "Seeking referral",
+  applied: "Applied",
+  skip: "Not a fit"
+};
+const STATUS_ORDER = ["new", "reviewing", "referral", "applied", "skip"];
+
+function statusKey(id) { return "jobradar_status_" + id; }
+function getStatus(id) { return localStorage.getItem(statusKey(id)) || "new"; }
+function setStatus(id, val) { localStorage.setItem(statusKey(id), val); }
+
+function referralUrl(company) {
+  // Points at LinkedIn's company search rather than a bare people-search keyword match —
+  // a plain keyword search returns loosely-related people, not actual employees. One extra
+  // click onto the real company page lets LinkedIn's own "People" tab filter correctly by
+  // current employer + connection degree, which a URL alone can't do without the company's ID.
+  const clean = company.replace(/[–—-].*$/, "").trim();
+  const kw = encodeURIComponent(clean);
+  return `https://www.linkedin.com/search/results/companies/?keywords=${kw}`;
+}
+
+let activeStatusFilter = null;
+
+function render() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  const field = document.getElementById("field-filter").value;
+
+  const counts = { new: 0, reviewing: 0, referral: 0, applied: 0, skip: 0 };
+  JOBS.forEach(j => counts[getStatus(j.id)]++);
+
+  const statRow = document.getElementById("stat-row");
+  statRow.innerHTML = STATUS_ORDER.map(s => `
+    <div class="stat-chip" data-active="${activeStatusFilter === s}" data-status="${s}">
+      <span class="n">${counts[s]}</span> ${STATUS_LABELS[s]}
+    </div>`).join("");
+  statRow.querySelectorAll(".stat-chip").forEach(el => {
+    el.addEventListener("click", () => {
+      const s = el.dataset.status;
+      activeStatusFilter = activeStatusFilter === s ? null : s;
+      render();
+    });
+  });
+
+  const filtered = JOBS.filter(j => {
+    if (field && j.field !== field) return false;
+    if (activeStatusFilter && getStatus(j.id) !== activeStatusFilter) return false;
+    if (q) {
+      const hay = (j.role + " " + j.company + " " + j.location).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+  if (filtered.length === 0) {
+    list.innerHTML = "";
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+
+  list.innerHTML = filtered.map(j => {
+    const st = getStatus(j.id);
+    const levelTag = j.levelConfidence === "low"
+      ? `<span class="tag level-unclear">${j.level}</span>`
+      : `<span class="tag">${j.level}</span>`;
+    return `
+    <div class="card" data-status="${st}">
+      <div class="card-top">
+        <div>
+          <p class="role">${j.role}</p>
+          <div class="company">${j.company} · ${j.location}</div>
+        </div>
+      </div>
+      <div class="meta-line">
+        <span class="tag field-${j.field}">${j.field === "ai" ? "AI/ML" : j.field[0].toUpperCase() + j.field.slice(1)}</span>
+        ${levelTag}
+        <span>found ${j.foundDate}</span>
+        <span>· ${j.source}</span>
+      </div>
+      <div class="match"><span class="label">Why it fits</span>${j.matchReason}</div>
+      <details class="pitch">
+        <summary>Suggested pitch</summary>
+        <p>${j.pitch}</p>
+      </details>
+      <div class="actions">
+        <a class="btn primary" href="${j.applyUrl}" target="_blank" rel="noopener">Open posting ↗</a>
+        <a class="btn referral" href="${referralUrl(j.company)}" target="_blank" rel="noopener">Find company → people ↗</a>
+        <select class="status-select" data-status="${st}" data-id="${j.id}">
+          ${STATUS_ORDER.map(s => `<option value="${s}" ${s === st ? "selected" : ""}>${STATUS_LABELS[s]}</option>`).join("")}
+        </select>
+      </div>
+    </div>`;
+  }).join("");
+
+  list.querySelectorAll(".status-select").forEach(sel => {
+    sel.addEventListener("change", () => {
+      setStatus(sel.dataset.id, sel.value);
+      render();
+    });
+  });
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("field-filter").addEventListener("change", render);
+document.getElementById("updated-at").textContent = "generated " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC";
+
+render();
+</script>
